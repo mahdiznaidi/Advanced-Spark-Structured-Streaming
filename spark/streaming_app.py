@@ -16,7 +16,8 @@ spark = (
 spark.sparkContext.setLogLevel("WARN")
 
 
-# 1️⃣ Lire Kafka
+# 1. Lire Kafka
+
 raw_df = (
     spark.readStream
     .format("kafka")
@@ -27,14 +28,16 @@ raw_df = (
 )
 
 
-# 2️⃣ Parser JSON sans crash
+# 2. Parser JSON sans crash
+
 parsed = raw_df.select(
     col("value").cast("string").alias("raw_value"),
     from_json(col("value").cast("string"), event_schema).alias("event"),
 ).select("raw_value", "event.*")
 
 
-# 3️⃣ Validation de la qualité des données
+# 3. Validation de la qualité des données
+
 parsed_with_flags = parsed.withColumn(
     "is_valid",
     col("device_id").isNotNull()
@@ -65,7 +68,7 @@ invalid_events = parsed_with_flags.filter(~col("is_valid")).select(
 )
 
 
-# 4️⃣ Sink des données invalides (console + fichier)
+# 4. Sink des données invalides (console + fichier)
 invalid_query_console = (
     invalid_events.writeStream.format("console")
     .outputMode("append")
@@ -82,11 +85,11 @@ invalid_query_file = (
 )
 
 
-# 5️⃣ Event time + watermark
+# 5. Event time + watermark
 with_watermark = valid_events.withWatermark("event_time", "10 minutes")
 
 
-# 6️⃣ Agrégation stateful par fenêtre
+# 6. Agrégation stateful par fenêtre
 avg_temp = (
     with_watermark.groupBy(window(col("event_time"), "5 minutes"), col("device_id"))
     .avg("temperature")
@@ -98,7 +101,7 @@ country_counts = with_watermark.groupBy(
 ).count()
 
 
-# 7️⃣ Output streaming (console + fichiers parquet)
+# 7. Output streaming (console + fichiers parquet)
 avg_temp_query = (
     avg_temp.writeStream.format("console")
     .outputMode("update")
