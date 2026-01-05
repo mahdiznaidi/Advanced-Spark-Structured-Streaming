@@ -17,6 +17,7 @@ spark.sparkContext.setLogLevel("WARN")
 
 
 # 1. Lire Kafka
+
 raw_df = (
     spark.readStream
     .format("kafka")
@@ -28,6 +29,7 @@ raw_df = (
 
 
 # 2. Parser JSON sans crash
+
 parsed = raw_df.select(
     col("value").cast("string").alias("raw_value"),
     from_json(col("value").cast("string"), event_schema).alias("event"),
@@ -35,6 +37,7 @@ parsed = raw_df.select(
 
 
 # 3. Validation de la qualité des données
+
 parsed_with_flags = parsed.withColumn(
     "is_valid",
     col("device_id").isNotNull()
